@@ -96,6 +96,7 @@ class Axes(MouseEventMixin):
         return collection
 
     # Limit methods
+    # mplcanvas/axes.py
     def set_xlim(self, left: float = None, right: float = None):
         """Set x-axis limits"""
         if left is not None:
@@ -103,7 +104,6 @@ class Axes(MouseEventMixin):
         if right is not None:
             self._xlim[1] = right
         self._autoscale_x = False
-        self.figure.draw()
 
     def set_ylim(self, bottom: float = None, top: float = None):
         """Set y-axis limits"""
@@ -112,7 +112,6 @@ class Axes(MouseEventMixin):
         if top is not None:
             self._ylim[1] = top
         self._autoscale_y = False
-        self.figure.draw()
 
     def get_xlim(self) -> Tuple[float, float]:
         return tuple(self._xlim)
@@ -137,32 +136,32 @@ class Axes(MouseEventMixin):
 
     def draw(self):
         """Render this axes and all its artists"""
-        from ipycanvas import hold_canvas
+        # from ipycanvas import hold_canvas
 
-        with hold_canvas(self.canvas):
-            # Draw axes background
-            self.canvas.fill_style = self.facecolor
-            self.canvas.fill_rect(self.x, self.y, self.width, self.height)
+        # with hold_canvas(self.canvas):
+        # Draw axes background
+        self.canvas.fill_style = self.facecolor
+        self.canvas.fill_rect(self.x, self.y, self.width, self.height)
 
-            # Set clipping region to axes area
-            self.canvas.save()
-            self.canvas.begin_path()
-            self.canvas.rect(self.x, self.y, self.width, self.height)
-            self.canvas.clip()
+        # Set clipping region to axes area
+        self.canvas.save()
+        self.canvas.begin_path()
+        self.canvas.rect(self.x, self.y, self.width, self.height)
+        self.canvas.clip()
 
-            # Draw all line artists
-            for line in self.lines:
-                line.draw()
+        # Draw all line artists
+        for line in self.lines:
+            line.draw()
 
-            # Draw all collections (scatter, etc.)
-            for collection in self.collections:
-                collection.draw()
+        # Draw all collections (scatter, etc.)
+        for collection in self.collections:
+            collection.draw()
 
-            # Restore canvas state (remove clipping)
-            self.canvas.restore()
+        # Restore canvas state (remove clipping)
+        self.canvas.restore()
 
-            # Draw axes frame and ticks
-            self._draw_frame()
+        # Draw axes frame and ticks
+        self._draw_frame()
 
     def _draw_frame(self):
         """Draw the axes frame and ticks"""
