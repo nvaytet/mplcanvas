@@ -9,6 +9,11 @@ from .transforms.transforms import DataTransform
 from .events.mouse import MouseEventMixin
 
 
+# class Axes:
+
+#     def __init__(self):
+
+
 class Axes(MouseEventMixin):
     """
     An Axes object represents one plot area within a figure.

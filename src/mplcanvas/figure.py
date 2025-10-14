@@ -3,7 +3,15 @@ from ipycanvas import Canvas, hold_canvas
 import ipywidgets as widgets
 from typing import List, Tuple
 
+
+from matplotlib.figure import Figure as MplFigure
+import matplotlib
+
+
+matplotlib.use("Agg")  # Headless backend
+
 from .axes import Axes
+from .render import draw_axes
 
 
 class Figure(widgets.HBox):
@@ -22,6 +30,8 @@ class Figure(widgets.HBox):
         toolbar: bool = True,
         **kwargs,
     ):
+        self.mpl_figure = MplFigure(figsize=figsize, dpi=dpi, facecolor=facecolor)
+
         # Convert figsize from inches to pixels
         self.figsize = figsize
         self.dpi = dpi
@@ -53,38 +63,39 @@ class Figure(widgets.HBox):
         # Auto-draw on creation
         self._auto_draw = True
 
-    def add_subplot(self, nrows: int, ncols: int, index: int, **kwargs) -> "Axes":
-        """Add a subplot to the figure"""
-        from .axes import Axes  # Import here to avoid circular imports
+    def add_subplot(self, nrows: int, ncols: int, index: int, **kwargs) -> None:
+        self.mpl_figure.add_subplot(nrows, ncols, index, **kwargs)
+        # """Add a subplot to the figure"""
+        # from .axes import Axes  # Import here to avoid circular imports
 
-        # For now, only support single subplot
-        if nrows == 1 and ncols == 1 and index == 1:
-            # Calculate axes position (leave margin for labels)
-            margin_left = 80
-            margin_right = 20
-            margin_top = 20
-            margin_bottom = 60
+        # # For now, only support single subplot
+        # if nrows == 1 and ncols == 1 and index == 1:
+        #     # Calculate axes position (leave margin for labels)
+        #     margin_left = 80
+        #     margin_right = 20
+        #     margin_top = 20
+        #     margin_bottom = 60
 
-            ax_x = margin_left
-            ax_y = margin_top
-            ax_width = self.width - margin_left - margin_right
-            ax_height = self.height - margin_top - margin_bottom
+        #     ax_x = margin_left
+        #     ax_y = margin_top
+        #     ax_width = self.width - margin_left - margin_right
+        #     ax_height = self.height - margin_top - margin_bottom
 
-            ax = Axes(self, (ax_x, ax_y, ax_width, ax_height))
-            self.axes.append(ax)
+        #     ax = Axes(self, (ax_x, ax_y, ax_width, ax_height))
+        #     self.axes.append(ax)
 
-            # If toolbar exists, register this new axes with it
-            if self.toolbar is not None:
-                self.toolbar.add_axes(ax)
+        #     # If toolbar exists, register this new axes with it
+        #     if self.toolbar is not None:
+        #         self.toolbar.add_axes(ax)
 
-            # Create toolbar if this is the first axes
-            if self._toolbar_enabled and self.toolbar is None:
-                self._create_toolbar()
-                # Register this axes with the new toolbar
-                self.toolbar.add_axes(ax)
-            return ax
-        else:
-            raise NotImplementedError("Multiple subplots not yet supported")
+        #     # Create toolbar if this is the first axes
+        #     if self._toolbar_enabled and self.toolbar is None:
+        #         self._create_toolbar()
+        #         # Register this axes with the new toolbar
+        #         self.toolbar.add_axes(ax)
+        #     return ax
+        # else:
+        #     raise NotImplementedError("Multiple subplots not yet supported")
 
     # Update the _create_toolbar method in mplcanvas/figure.py
 
@@ -119,6 +130,18 @@ class Figure(widgets.HBox):
 
         # return ax
 
+    def _repr_mimebundle_(self, include=None, exclude=None):
+        """
+        Jupyter representation - this makes the figure display automatically
+        when it's the result of a cell.
+        """
+        # # Ensure we're drawn
+        # if self._auto_draw:
+        self.draw()
+
+        # Let the parent VBox handle the representation
+        return super()._repr_mimebundle_(include=include, exclude=exclude)
+
     def draw(self):
         """Render the entire figure"""
         with hold_canvas(self.canvas):
@@ -130,8 +153,9 @@ class Figure(widgets.HBox):
             self.canvas.fill_rect(0, 0, self.width, self.height)
 
             # Draw all axes
-            for ax in self.axes:
-                ax.draw()
+            print("Drawing all axes...", self.mpl_figure.axes)
+            for ax in self.mpl_figure.axes:
+                draw_axes(ax, self.canvas)
 
     def show(self):
         """
