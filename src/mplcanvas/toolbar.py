@@ -6,6 +6,8 @@ Navigation toolbar for mplcanvas - operates on any axes in the figure
 import ipywidgets as widgets
 from ipycanvas import hold_canvas
 
+from .utils import flip_y
+
 
 class Toolbar(widgets.VBox):
     """
@@ -21,8 +23,9 @@ class Toolbar(widgets.VBox):
         # Tool state
         self._active_tool = None  # 'zoom', 'pan', or None
         self._zoom_rect_start = None
-        self._pan_start_canvas = None
-        self._pan_start_data = None
+        # self._pan_start_canvas = None
+        self._pan_start = None
+        self._pan_start_point = None
         self._pan_start_limits = None
         self._active_axes = None  # Which axes is currently being interacted with
         self._tools_lock = False
@@ -81,73 +84,6 @@ class Toolbar(widgets.VBox):
             **kwargs,
         )
 
-    def _store_home_view(self, axes):
-        """Store the current view of an axes as its home view"""
-        axes_id = id(axes)
-        self._home_views[axes_id] = (axes.get_xlim(), axes.get_ylim())
-
-    def _setup_event_connections(self):
-        # """Connect to all existing axes in the figure"""
-        # for axes in self.figure.axes:
-        #     self.add_axes(axes)
-        self.figure.canvas.on_mouse_down(self._on_canvas_mouse_down)
-        self.figure.canvas.on_mouse_up(self._on_canvas_mouse_up)
-        self.figure.canvas.on_mouse_move(self._on_canvas_mouse_move)
-
-    def _on_canvas_mouse_move(self, x: float, y: float):
-        """Handle canvas mouse move events"""
-        # Always track mouse position for cursor display
-        # self._current_mouse_pos = (x, y)
-
-        if (ax := self.figure._find_axes_at_position((x, y))) is not None:
-            inv = ax.transData.inverted()
-            data_x, data_y = inv.transform((x, y))
-            self.figure.status_bar.value = f"Mouse at ({data_x:.1f}, {data_y:.1f})"
-
-    def _on_canvas_mouse_down(self, event):
-        """Handle mouse press for active tools"""
-        if self._get_active_tool() == "pan":
-            # self._active_axes = self._determine_active_axes(event)
-            # if self._active_axes:
-            self._start_pan(event)
-        # elif self._get_active_tool() == "zoom":
-        #     self._active_axes = self._determine_active_axes(event)
-        #     if self._active_axes:
-        #         self._start_zoom(event)
-
-        # if not self._point_in_axes(x, y):
-        #     return
-
-    # def _update_button_states(self):
-    #     """Update button appearance based on active tool"""
-    #     # Reset all button styles
-    #     normal_style = widgets.ButtonStyle()
-    #     active_style = widgets.ButtonStyle(button_color="lightblue")
-
-    #     self.home_button.style = normal_style
-    #     self.pan_button.style = (
-    #         active_style if self._active_tool == "pan" else normal_style
-    #     )
-    #     self.zoom_button.style = (
-    #         active_style if self._active_tool == "zoom" else normal_style
-    #     )
-
-    # def _determine_active_axes(self, event):
-    #     """
-    #     Determine which axes this mouse event belongs to.
-    #     This is key - we work on whichever axes the user is interacting with.
-    #     """
-    #     # The event should have inaxes set by the axes' mouse handler
-    #     if hasattr(event, "inaxes") and event.inaxes is not None:
-    #         return event.inaxes
-
-    #     # Fallback: check all axes to see which one contains the event
-    #     for axes in self.figure.axes:
-    #         if axes._point_in_axes(event.canvas_x, event.canvas_y):
-    #             return axes
-
-    #     return None
-
     # Button event handlers
     def _on_home_clicked(self, button):
         """Reset all axes to home view"""
@@ -171,13 +107,13 @@ class Toolbar(widgets.VBox):
             return
         self._tools_lock = True
         if change["new"]:  # Button toggled on
-            # self._active_tool = "pan"
+            self._active_tool = "pan"
             self.zoom_button.value = False  # Deactivate zoom if active
             # self.status_label.value = "Pan tool active - drag on any plot to move it"
-        # else:  # Button toggled off
-        #     if self._active_tool == "pan":
-        #         self._active_tool = None
-        #         # self.status_label.value = "Pan tool deactivated"
+        else:  # Button toggled off
+            if self._active_tool == "pan":
+                self._active_tool = None
+                # self.status_label.value = "Pan tool deactivated"
         # if self._active_tool == "pan":
         #     self._active_tool = None
         #     # self.status_label.value = "Pan tool deactivated"
@@ -215,12 +151,128 @@ class Toolbar(widgets.VBox):
         #     # )
         # self._update_button_states()
 
-    def _get_active_tool(self):
-        """Return the currently active tool"""
-        for name, tool in self.tools.items():
-            if getattr(tool, "value", False):
-                return name
-        return None
+    def _store_home_view(self, axes):
+        """Store the current view of an axes as its home view"""
+        axes_id = id(axes)
+        self._home_views[axes_id] = (axes.get_xlim(), axes.get_ylim())
+
+    def _setup_event_connections(self):
+        # """Connect to all existing axes in the figure"""
+        # for axes in self.figure.axes:
+        #     self.add_axes(axes)
+        self.figure.canvas.on_mouse_down(self._on_canvas_mouse_down)
+        self.figure.canvas.on_mouse_up(self._on_canvas_mouse_up)
+        self.figure.canvas.on_mouse_move(self._on_canvas_mouse_move)
+
+    def _on_canvas_mouse_move(self, x: float, y: float):
+        """Handle canvas mouse move events"""
+        # Always track mouse position for cursor display
+        # self._current_mouse_pos = (x, y)
+        y = flip_y(y, self.figure.canvas)
+        ax = self.figure._find_axes_at_position((x, y))
+        if ax is None:
+            self.figure.status_bar.value = ""
+            return
+
+        inv = ax.transData.inverted()
+        data_x, data_y = inv.transform((x, y))
+        self.figure.status_bar.value = f"Mouse at ({data_x:.1f}, {data_y:.1f})"
+
+        if self._active_tool == "pan":
+            # self._do_pan(ax, data_x, data_y)
+            self._do_pan(ax, x, y)
+
+    def _on_canvas_mouse_down(self, x: float, y: float):
+        """Handle mouse press for active tools"""
+        y = flip_y(y, self.figure.canvas)
+        ax = self.figure._find_axes_at_position((x, y))
+        if ax is None:
+            return
+
+        if self._active_tool == "pan":
+            # self._active_axes = self._determine_active_axes(event)
+            # if self._active_axes:
+            self._start_pan(ax, x, y)
+        # elif self._get_active_tool() == "zoom":
+        #     self._active_axes = self._determine_active_axes(event)
+        #     if self._active_axes:
+        #         self._start_zoom(event)
+
+        # if not self._point_in_axes(x, y):
+        #     return
+
+    def _on_canvas_mouse_up(self, x: float, y: float):
+        if self._active_tool == "pan" and self._pan_start is not None:
+            self._end_pan()
+
+    # In toolbar _start_pan:
+    def _start_pan(self, ax, x, y):
+        """Start panning operation on the active axes"""
+
+        # inv = ax.transData.inverted()
+        # data_x, data_y = inv.transform((x, y))
+        # self._pan_start_point = (data_x, data_y)
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+
+        xy_canvas = ax.transData.transform(((xlim[0], ylim[0]), (xlim[1], ylim[1])))
+        xlim_canvas = (xy_canvas[0][0], xy_canvas[1][0])
+        ylim_canvas = (xy_canvas[0][1], xy_canvas[1][1])
+
+        self._pan_start = {
+            "origin": (x, y),
+            "limits": (xlim, ylim),
+            "scale": (
+                (xlim[1] - xlim[0]) / (xlim_canvas[1] - xlim_canvas[0]),
+                (ylim[1] - ylim[0]) / (ylim_canvas[1] - ylim_canvas[0]),
+            ),
+        }
+
+        # self._pan_start_limits = (ax.get_xlim(), ax.get_ylim())
+        # print("self._pan_start_point", self._pan_start_point)
+
+    # def _do_pan(self, ax, data_x, data_y):
+    def _do_pan(self, ax, x, y):
+        # """Perform panning using canvas coordinate deltas"""
+        # print(self._pan_start_canvas, self._pan_start_limits, self._active_axes)
+        if (
+            self._pan_start is None
+            # or self._pan_start_limits is None
+            # or self._active_axes is None
+        ):
+            return
+
+        dx = (x - self._pan_start["origin"][0]) * self._pan_start["scale"][0]
+        dy = (y - self._pan_start["origin"][1]) * self._pan_start["scale"][1]
+
+        # Apply pan using original limits as reference
+        start_xlim, start_ylim = self._pan_start["limits"]
+
+        # print("start point", self._pan_start_point)
+        # print("data point", (data_x, data_y))
+        # print("delta", (dx, dy))
+        # print("start limits", self._pan_start_limits)
+
+        new_xlim = (start_xlim[0] - dx, start_xlim[1] - dx)
+        new_ylim = (start_ylim[0] - dy, start_ylim[1] - dy)
+        print("new limits", new_xlim, new_ylim)
+
+        # Update limits and redraw
+        ax.set(xlim=new_xlim, ylim=new_ylim)
+        # self.figure.mpl_figure.canvas.draw_idle()
+        self.figure.draw()
+
+    def _end_pan(self):
+        """End panning operation"""
+        self._pan_start = None
+        # self._pan_start_limits = None
+        # self._active_axes = None
+
+    # def _get_active_tool(self):
+    #     """Return the currently active tool"""
+    #     for name, tool in self.tools.items():
+    #         if getattr(tool, "value", False):
+    #             return name
+    #     return None
 
     # Mouse event handlers
     def _on_mouse_move(self, event):
@@ -307,75 +359,73 @@ class Toolbar(widgets.VBox):
     #     self._active_axes.set_ylim(*new_ylim)
     #     self.figure.draw()  # Single draw with hold_canvas
 
-    # In toolbar _start_pan:
-    def _start_pan(self, event):
-        """Start panning operation on the active axes"""
-        self._pan_start_canvas = (
-            event.canvas_x,
-            event.canvas_y,
-        )  # ✅ Store canvas coords
-        self._pan_start_data = (
-            event.data_x,
-            event.data_y,
-        )  # ✅ Store initial data coords
-        self._pan_start_limits = (
-            self._active_axes.get_xlim(),
-            self._active_axes.get_ylim(),
-        )
+    # # In toolbar _start_pan:
+    # def _start_pan(self, ax, x, y):
+    #     """Start panning operation on the active axes"""
+    #     # self._pan_start_canvas = (
+    #     #     event.canvas_x,
+    #     #     event.canvas_y,
+    #     # )  # ✅ Store canvas coords
 
-        # Store the coordinate transform parameters at pan start
-        self._pan_axes_bounds = {
-            "x": self._active_axes.x,
-            "y": self._active_axes.y,
-            "width": self._active_axes.width,
-            "height": self._active_axes.height,
-            "xlim": self._pan_start_limits[0],
-            "ylim": self._pan_start_limits[1],
-        }
+    #     inv = ax.transData.inverted()
+    #     data_x, data_y = inv.transform((x, y))
+    #     self._pan_start_point = (data_x, data_y)
 
-        # print(self._pan_axes_bounds)  # Debug
+    #     self._pan_start_limits = (ax.get_xlim(), ax.get_ylim())
 
-        # self.status_label.value = "Panning axes..."
+    # # Store the coordinate transform parameters at pan start
+    # self._pan_axes_bounds = {
+    #     "x": self._active_axes.x,
+    #     "y": self._active_axes.y,
+    #     "width": self._active_axes.width,
+    #     "height": self._active_axes.height,
+    #     "xlim": self._pan_start_limits[0],
+    #     "ylim": self._pan_start_limits[1],
+    # }
 
-    def _do_pan(self, event):
-        """Perform panning using canvas coordinate deltas"""
-        # print(self._pan_start_canvas, self._pan_start_limits, self._active_axes)
-        if (
-            self._pan_start_canvas is None
-            or self._pan_start_limits is None
-            or self._active_axes is None
-        ):
-            return
+    # # print(self._pan_axes_bounds)  # Debug
 
-        # Calculate delta in CANVAS coordinates (stable reference)
-        dx_canvas = event.canvas_x - self._pan_start_canvas[0]
-        dy_canvas = event.canvas_y - self._pan_start_canvas[1]
+    # # self.status_label.value = "Panning axes..."
 
-        # Convert canvas deltas to data deltas using ORIGINAL transform parameters
-        bounds = self._pan_axes_bounds
-        dx_data = (dx_canvas / bounds["width"]) * (
-            bounds["xlim"][1] - bounds["xlim"][0]
-        )
-        dy_data = -(dy_canvas / bounds["height"]) * (
-            bounds["ylim"][1] - bounds["ylim"][0]
-        )  # Note: negative for Y
+    # def _do_pan(self, event):
+    #     """Perform panning using canvas coordinate deltas"""
+    #     # print(self._pan_start_canvas, self._pan_start_limits, self._active_axes)
+    #     if (
+    #         self._pan_start_canvas is None
+    #         or self._pan_start_limits is None
+    #         or self._active_axes is None
+    #     ):
+    #         return
 
-        # Apply pan using original limits as reference
-        start_xlim, start_ylim = self._pan_start_limits
-        new_xlim = (start_xlim[0] - dx_data, start_xlim[1] - dx_data)
-        new_ylim = (start_ylim[0] - dy_data, start_ylim[1] - dy_data)
+    #     # Calculate delta in CANVAS coordinates (stable reference)
+    #     dx_canvas = event.canvas_x - self._pan_start_canvas[0]
+    #     dy_canvas = event.canvas_y - self._pan_start_canvas[1]
 
-        # Update limits and redraw
-        self._active_axes.set_xlim(*new_xlim)
-        self._active_axes.set_ylim(*new_ylim)
-        self.figure.draw()
+    #     # Convert canvas deltas to data deltas using ORIGINAL transform parameters
+    #     bounds = self._pan_axes_bounds
+    #     dx_data = (dx_canvas / bounds["width"]) * (
+    #         bounds["xlim"][1] - bounds["xlim"][0]
+    #     )
+    #     dy_data = -(dy_canvas / bounds["height"]) * (
+    #         bounds["ylim"][1] - bounds["ylim"][0]
+    #     )  # Note: negative for Y
 
-    def _end_pan(self):
-        """End panning operation"""
-        self._pan_start = None
-        self._pan_start_limits = None
-        self._active_axes = None
-        # self.status_label.value = "Pan complete"
+    #     # Apply pan using original limits as reference
+    #     start_xlim, start_ylim = self._pan_start_limits
+    #     new_xlim = (start_xlim[0] - dx_data, start_xlim[1] - dx_data)
+    #     new_ylim = (start_ylim[0] - dy_data, start_ylim[1] - dy_data)
+
+    #     # Update limits and redraw
+    #     self._active_axes.set_xlim(*new_xlim)
+    #     self._active_axes.set_ylim(*new_ylim)
+    #     self.figure.draw()
+
+    # def _end_pan(self):
+    #     """End panning operation"""
+    #     self._pan_start = None
+    #     self._pan_start_limits = None
+    #     self._active_axes = None
+    # self.status_label.value = "Pan complete"
 
     # Zoom implementation (now works on self._active_axes)
     # def _start_zoom(self, event):

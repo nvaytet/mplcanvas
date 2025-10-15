@@ -1,9 +1,7 @@
 import numpy as np
 
 
-def flip_y(y, canvas):
-    """Flip y coordinate for canvas (top-left origin)"""
-    return canvas.height - y
+from .utils import flip_y
 
 
 def draw_line(line, ax, canvas):
