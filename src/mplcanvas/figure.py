@@ -1,7 +1,7 @@
 # mplcanvas/figure.py
 from ipycanvas import Canvas, hold_canvas
-import ipywidgets as widgets
-from typing import List, Tuple
+import ipywidgets as ipw
+from typing import Tuple
 
 
 from matplotlib.figure import Figure as MplFigure
@@ -15,7 +15,7 @@ from .render import draw_axes
 from .toolbar import Toolbar
 
 
-class Figure(widgets.HBox):
+class Figure(ipw.HBox):
     """
     Top-level container for all plot elements.
 
@@ -39,7 +39,7 @@ class Figure(widgets.HBox):
         self.width = int(figsize[0] * dpi)
         self.height = int(figsize[1] * dpi)
 
-        layout = widgets.Layout(width=f"{self.width}px", height=f"{self.height}px")
+        layout = ipw.Layout(width=f"{self.width}px", height=f"{self.height}px")
 
         # Create the canvas
         self.canvas = Canvas(width=self.width, height=self.height, layout=layout)
@@ -52,11 +52,15 @@ class Figure(widgets.HBox):
         # else:
         #     self._toolbar_enabled = False
 
+        self.status_bar = ipw.Label(value="")  # Placeholder for status messages
+
         # Initialize as VBox with canvas as child
-        super().__init__(children=[self.toolbar, self.canvas], **kwargs)
+        super().__init__(
+            children=[self.toolbar, ipw.VBox([self.canvas, self.status_bar])], **kwargs
+        )
 
         # Container for all axes
-        self.axes: List[Axes] = []
+        # self.axes: List[Axes] = []
 
         # Figure-level properties
         self.facecolor = facecolor
@@ -100,36 +104,51 @@ class Figure(widgets.HBox):
 
     # Update the _create_toolbar method in mplcanvas/figure.py
 
-    def _create_toolbar(self, axes=None):
-        """Create and add the toolbar"""
-        from .widgets.toolbar import NavigationToolbar
+    @property
+    def axes(self):
+        """Return the list of axes in the figure"""
+        return self.mpl_figure.axes
 
-        # Toolbar operates on the entire figure, not a single axes
-        self.toolbar = NavigationToolbar(self)
+    def _find_axes_at_position(self, xy: tuple[float, float]) -> Axes | None:
+        """Find which axes (if any) contains the given canvas coordinates"""
+        for ax in self.axes:
+            if ax.contains_point(xy):
+                # # Convert to axes-relative coordinates
+                # axes_x = x - ax.x
+                # axes_y = y - ax.y
+                return ax  # , axes_x, axes_y
+        # return None, None, None
 
-        # Update children to include toolbar on the left
-        self.children = [self.toolbar, self.canvas]
+    # def _create_toolbar(self, axes=None):
+    #     """Create and add the toolbar"""
+    #     from .ipw.toolbar import NavigationToolbar
 
-        # # def add_subplot(self, nrows: int, ncols: int, index: int, **kwargs) -> 'Axes':
-        # #     """Add a subplot to the figure"""
-        # #     from .axes import Axes
+    #     # Toolbar operates on the entire figure, not a single axes
+    #     self.toolbar = NavigationToolbar(self)
 
-        # # ... existing subplot creation code ...
+    #     # Update children to include toolbar on the left
+    #     self.children = [self.toolbar, self.canvas]
 
-        # ax = Axes(self, (ax_x, ax_y, ax_width, ax_height))
-        # self.axes.append(ax)
+    #     # # def add_subplot(self, nrows: int, ncols: int, index: int, **kwargs) -> 'Axes':
+    # #     """Add a subplot to the figure"""
+    # #     from .axes import Axes
 
-        # # If toolbar exists, register this new axes with it
-        # if self.toolbar is not None:
-        #     self.toolbar.add_axes(ax)
+    # # ... existing subplot creation code ...
 
-        # # Create toolbar if this is the first axes
-        # if self._toolbar_enabled and self.toolbar is None:
-        #     self._create_toolbar()
-        #     # Register this axes with the new toolbar
-        #     self.toolbar.add_axes(ax)
+    # ax = Axes(self, (ax_x, ax_y, ax_width, ax_height))
+    # self.axes.append(ax)
 
-        # return ax
+    # # If toolbar exists, register this new axes with it
+    # if self.toolbar is not None:
+    #     self.toolbar.add_axes(ax)
+
+    # # Create toolbar if this is the first axes
+    # if self._toolbar_enabled and self.toolbar is None:
+    #     self._create_toolbar()
+    #     # Register this axes with the new toolbar
+    #     self.toolbar.add_axes(ax)
+
+    # return ax
 
     def _repr_mimebundle_(self, include=None, exclude=None):
         """

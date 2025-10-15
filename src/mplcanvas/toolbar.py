@@ -7,7 +7,7 @@ import ipywidgets as widgets
 from ipycanvas import hold_canvas
 
 
-class NavigationToolbar(widgets.VBox):
+class Toolbar(widgets.VBox):
     """
     Navigation toolbar that can operate on any axes in the figure.
 
@@ -35,21 +35,6 @@ class NavigationToolbar(widgets.VBox):
         self._zoom_rect_current = None
         self._zoom_rect_visible = False
 
-        # Create toolbar buttons
-        self._create_buttons()
-
-        # Set up event connections - we'll connect to all axes
-        self._setup_event_connections()
-
-        # Initialize as VBox
-        super().__init__(
-            children=[self.button_box], layout=widgets.Layout(width="auto"), **kwargs
-        )
-
-    def _create_buttons(self):
-        """Create toolbar buttons"""
-        # Button styling
-        # button_style = widgets.ButtonStyle()
         button_layout = widgets.Layout(width="37px", padding="0px 0px 0px 0px")
 
         # Home button
@@ -80,29 +65,15 @@ class NavigationToolbar(widgets.VBox):
         )
         self.zoom_button.observe(self._on_zoom_clicked, names="value")
 
-        # # Status label
-        # self.status_label = widgets.Label(
-        #     value="Ready", layout=widgets.Layout(margin="10px 5px")
-        # )
+        # Set up event connections - we'll connect to all axes
+        self._setup_event_connections()
 
-        # Arrange buttons vertically
-        self.button_box = widgets.VBox(
-            [self.home_button, self.pan_button, self.zoom_button],
-            layout=widgets.Layout(align_items="center"),
+        # Initialize as VBox
+        super().__init__(
+            children=[self.home_button, self.pan_button, self.zoom_button],
+            layout=widgets.Layout(width="auto"),
+            **kwargs,
         )
-
-    def add_axes(self, axes):
-        """
-        Add an axes to be managed by this toolbar.
-        Called when new axes are created in the figure.
-        """
-        # Store home view for this axes
-        self._store_home_view(axes)
-
-        # Connect to this axes' mouse events
-        axes.add_mouse_callback(self._on_mouse_move)
-        axes.add_click_callback(self._on_mouse_press)
-        axes._mouse_release_callbacks.append(self._on_mouse_release)
 
     def _store_home_view(self, axes):
         """Store the current view of an axes as its home view"""
@@ -110,9 +81,25 @@ class NavigationToolbar(widgets.VBox):
         self._home_views[axes_id] = (axes.get_xlim(), axes.get_ylim())
 
     def _setup_event_connections(self):
-        """Connect to all existing axes in the figure"""
-        for axes in self.figure.axes:
-            self.add_axes(axes)
+        # """Connect to all existing axes in the figure"""
+        # for axes in self.figure.axes:
+        #     self.add_axes(axes)
+        # self.figure.canvas.on_mouse_down(self._on_canvas_mouse_down)
+        # self.figure.canvas.on_mouse_up(self._on_canvas_mouse_up)
+        self.figure.canvas.on_mouse_move(self._on_canvas_mouse_move)
+
+    def _on_canvas_mouse_move(self, x: float, y: float):
+        """Handle canvas mouse move events"""
+        # Always track mouse position for cursor display
+        # self._current_mouse_pos = (x, y)
+
+        if (ax := self.figure._find_axes_at_position((x, y))) is not None:
+            inv = ax.transData.inverted()
+            data_x, data_y = inv.transform((x, y))
+            self.figure.status_bar.value = f"Mouse at ({data_x:.1f}, {data_y:.1f})"
+
+        # if not self._point_in_axes(x, y):
+        #     return
 
     def _update_button_states(self):
         """Update button appearance based on active tool"""
