@@ -14,6 +14,8 @@ Usage:
     plt.show()
 """
 
+import numpy as np
+
 from .figure import Figure
 
 # # Global state (like matplotlib.pyplot)
@@ -22,22 +24,17 @@ from .figure import Figure
 
 
 # Figure management
-def figure(num=None, figsize=(8, 6), dpi=100, facecolor="white", **kwargs) -> Figure:
+def figure(**kwargs) -> Figure:
     """
     Create a new figure or retrieve an existing figure.
 
     Parameters match matplotlib.pyplot.figure()
     """
-    # global _current_figure, _current_axes
 
-    fig = Figure(figsize=figsize, dpi=dpi, facecolor=facecolor, **kwargs)
-    # _current_figure = fig
-    # _current_axes = None  # Reset current axes
-
-    return fig
+    return Figure(**kwargs)
 
 
-def subplots(nrows=1, ncols=1, figsize=(8, 6), **kwargs):
+def subplots(nrows=1, ncols=1, **kwargs):
     """
     Create a figure and subplots.
 
@@ -45,12 +42,18 @@ def subplots(nrows=1, ncols=1, figsize=(8, 6), **kwargs):
     """
     # global _current_figure, _current_axes
 
-    fig = figure(figsize=figsize, **kwargs)
+    fig = figure(**kwargs)
+    axes = []
+    for i in range(nrows * ncols):
+        ax = fig.add_subplot(nrows, ncols, i + 1)
+        axes.append(ax)
+    print("axes", axes)
+    return fig, np.array(axes) if nrows * ncols > 1 else axes[0]
 
-    if nrows == 1 and ncols == 1:
-        ax = fig.mpl_figure.add_subplot(nrows, ncols, 1)
-        # _current_axes = ax
-        return fig, ax
-    else:
-        # TODO: Implement multiple subplots
-        raise NotImplementedError("Multiple subplots not yet implemented")
+    # if nrows == 1 and ncols == 1:
+    #     ax = fig.mpl_figure.add_subplot(nrows, ncols, 1)
+    #     # _current_axes = ax
+    #     return fig, ax
+    # else:
+    #     # TODO: Implement multiple subplots
+    #     raise NotImplementedError("Multiple subplots not yet implemented")

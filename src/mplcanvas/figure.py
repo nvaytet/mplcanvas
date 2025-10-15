@@ -1,16 +1,16 @@
 # mplcanvas/figure.py
 from ipycanvas import Canvas, hold_canvas
 import ipywidgets as ipw
-from typing import Tuple
 
 
 from matplotlib.figure import Figure as MplFigure
+from matplotlib.axes import Axes
 import matplotlib
 
 
 matplotlib.use("Agg")  # Headless backend
 
-from .axes import Axes
+# from .axes import Axes
 from .render import draw_axes
 from .toolbar import Toolbar
 
@@ -25,19 +25,17 @@ class Figure(ipw.HBox):
 
     def __init__(
         self,
-        figsize: Tuple[float, float] = (8, 6),
-        dpi: int = 100,
         facecolor: str = "white",
-        toolbar: bool = True,
+        # toolbar: bool = True,
         **kwargs,
     ):
-        self.mpl_figure = MplFigure(figsize=figsize, dpi=dpi, facecolor=facecolor)
+        self.mpl_figure = MplFigure(facecolor=facecolor, **kwargs)
 
         # Convert figsize from inches to pixels
-        self.figsize = figsize
-        self.dpi = dpi
-        self.width = int(figsize[0] * dpi)
-        self.height = int(figsize[1] * dpi)
+        self.figsize = self.mpl_figure.get_size_inches()
+        self.dpi = self.mpl_figure.get_dpi()
+        self.width = int(self.figsize[0] * self.dpi)
+        self.height = int(self.figsize[1] * self.dpi)
 
         layout = ipw.Layout(width=f"{self.width}px", height=f"{self.height}px")
 
@@ -68,8 +66,8 @@ class Figure(ipw.HBox):
         # Auto-draw on creation
         self._auto_draw = True
 
-    def add_subplot(self, nrows: int, ncols: int, index: int, **kwargs) -> None:
-        self.mpl_figure.add_subplot(nrows, ncols, index, **kwargs)
+    def add_subplot(self, nrows: int, ncols: int, index: int, **kwargs) -> Axes:
+        return self.mpl_figure.add_subplot(nrows, ncols, index, **kwargs)
         # """Add a subplot to the figure"""
         # from .axes import Axes  # Import here to avoid circular imports
 
