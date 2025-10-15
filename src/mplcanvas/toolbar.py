@@ -254,7 +254,7 @@ class Toolbar(widgets.VBox):
 
         new_xlim = (start_xlim[0] - dx, start_xlim[1] - dx)
         new_ylim = (start_ylim[0] - dy, start_ylim[1] - dy)
-        print("new limits", new_xlim, new_ylim)
+        # print("new limits", new_xlim, new_ylim)
 
         # Update limits and redraw
         ax.set(xlim=new_xlim, ylim=new_ylim)

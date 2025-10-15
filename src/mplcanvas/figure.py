@@ -173,7 +173,7 @@ class Figure(ipw.HBox):
             self.canvas.fill_rect(0, 0, self.width, self.height)
 
             # Draw all axes
-            print("Drawing all axes...", self.mpl_figure.axes)
+            # print("Drawing all axes...", self.mpl_figure.axes)
             for ax in self.mpl_figure.axes:
                 draw_axes(ax, self.canvas)
 

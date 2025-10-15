@@ -53,7 +53,7 @@ def draw_axes(ax, canvas):
     )
     width = xmax_disp - xmin_disp
     height = ymax_disp - ymin_disp
-    print(f"Drawing axes at {xmin_disp},{ymin_disp} size {width}x{height}")
+    # print(f"Drawing axes at {xmin_disp},{ymin_disp} size {width}x{height}")
 
     canvas.stroke_style = "black"
     canvas.line_width = 1.0
