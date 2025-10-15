@@ -104,6 +104,17 @@ class Toolbar(widgets.VBox):
             data_x, data_y = inv.transform((x, y))
             self.figure.status_bar.value = f"Mouse at ({data_x:.1f}, {data_y:.1f})"
 
+    def _on_canvas_mouse_down(self, event):
+        """Handle mouse press for active tools"""
+        if self._get_active_tool() == "pan":
+            # self._active_axes = self._determine_active_axes(event)
+            # if self._active_axes:
+            self._start_pan(event)
+        # elif self._get_active_tool() == "zoom":
+        #     self._active_axes = self._determine_active_axes(event)
+        #     if self._active_axes:
+        #         self._start_zoom(event)
+
         # if not self._point_in_axes(x, y):
         #     return
 
@@ -140,16 +151,19 @@ class Toolbar(widgets.VBox):
     # Button event handlers
     def _on_home_clicked(self, button):
         """Reset all axes to home view"""
-        for axes in self.figure.axes:
-            axes_id = id(axes)
-            if axes_id in self._home_views:
-                xlim, ylim = self._home_views[axes_id]
-                axes.set_xlim(*xlim)
-                axes.set_ylim(*ylim)
+        for ax in self.figure.axes:
+            ax.autoscale_view()
+
+            # axes_id = id(axes)
+            # if axes_id in self._home_views:
+            #     xlim, ylim = self._home_views[axes_id]
+            #     axes.set_xlim(*xlim)
+            #     axes.set_ylim(*ylim)
 
         # self.status_label.value = "Reset all axes to home view"
-        self._active_tool = None
+        # self._active_tool = None
         # self._update_button_states()
+        self.figure.draw()
 
     def _on_pan_clicked(self, change):
         """Activate/deactivate pan tool"""
@@ -160,10 +174,10 @@ class Toolbar(widgets.VBox):
             # self._active_tool = "pan"
             self.zoom_button.value = False  # Deactivate zoom if active
             # self.status_label.value = "Pan tool active - drag on any plot to move it"
-        else:  # Button toggled off
-            if self._active_tool == "pan":
-                self._active_tool = None
-                # self.status_label.value = "Pan tool deactivated"
+        # else:  # Button toggled off
+        #     if self._active_tool == "pan":
+        #         self._active_tool = None
+        #         # self.status_label.value = "Pan tool deactivated"
         # if self._active_tool == "pan":
         #     self._active_tool = None
         #     # self.status_label.value = "Pan tool deactivated"
@@ -172,14 +186,6 @@ class Toolbar(widgets.VBox):
         #     # self.status_label.value = "Pan tool active - drag on any plot to move it"
         # self._update_button_states()
         self._tools_lock = False
-
-    @property
-    def active_tool(self):
-        """Return the currently active tool"""
-        for tool in self.tools.values():
-            if getattr(tool, "value", False):
-                return tool
-        return None
 
     def _on_zoom_clicked(self, change):
         """Activate/deactivate zoom tool"""
@@ -208,6 +214,13 @@ class Toolbar(widgets.VBox):
         #     #     "Zoom tool active - drag on any plot to select region"
         #     # )
         # self._update_button_states()
+
+    def _get_active_tool(self):
+        """Return the currently active tool"""
+        for name, tool in self.tools.items():
+            if getattr(tool, "value", False):
+                return name
+        return None
 
     # Mouse event handlers
     def _on_mouse_move(self, event):
