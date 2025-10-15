@@ -54,7 +54,9 @@ class Figure(ipw.HBox):
 
         # Initialize as VBox with canvas as child
         super().__init__(
-            children=[self.toolbar, ipw.VBox([self.canvas, self.status_bar])], **kwargs
+            children=[self.toolbar, ipw.VBox([self.canvas, self.status_bar])],
+            # children=[ipw.VBox([self.canvas])],
+            **kwargs,
         )
 
         # Container for all axes

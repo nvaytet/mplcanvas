@@ -47,7 +47,7 @@ def subplots(nrows=1, ncols=1, **kwargs):
     for i in range(nrows * ncols):
         ax = fig.add_subplot(nrows, ncols, i + 1)
         axes.append(ax)
-    print("axes", axes)
+    # print("axes", axes)
     return fig, np.array(axes) if nrows * ncols > 1 else axes[0]
 
     # if nrows == 1 and ncols == 1:
