@@ -55,7 +55,7 @@ class NavigationToolbar(widgets.VBox):
         # Home button
         self.home_button = widgets.Button(
             # description="🏠",
-            icon="fa-home",
+            icon="home",
             tooltip="Reset all axes to home view",
             # style=button_style,
             layout=button_layout,

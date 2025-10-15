@@ -12,6 +12,7 @@ matplotlib.use("Agg")  # Headless backend
 
 from .axes import Axes
 from .render import draw_axes
+from .toolbar import Toolbar
 
 
 class Figure(widgets.HBox):
@@ -44,15 +45,15 @@ class Figure(widgets.HBox):
         self.canvas = Canvas(width=self.width, height=self.height, layout=layout)
 
         # Create toolbar if requested
-        self.toolbar = None
-        if toolbar:
-            # We'll create the toolbar after adding the first axes
-            self._toolbar_enabled = True
-        else:
-            self._toolbar_enabled = False
+        self.toolbar = Toolbar(figure=self)
+        # if toolbar:
+        #     # We'll create the toolbar after adding the first axes
+        #     self._toolbar_enabled = True
+        # else:
+        #     self._toolbar_enabled = False
 
         # Initialize as VBox with canvas as child
-        super().__init__(children=[self.canvas], **kwargs)
+        super().__init__(children=[self.toolbar, self.canvas], **kwargs)
 
         # Container for all axes
         self.axes: List[Axes] = []
