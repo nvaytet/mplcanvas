@@ -65,12 +65,18 @@ class Toolbar(widgets.VBox):
         )
         self.zoom_button.observe(self._on_zoom_clicked, names="value")
 
+        self.tools = {
+            "home": self.home_button,
+            "pan": self.pan_button,
+            "zoom": self.zoom_button,
+        }
+
         # Set up event connections - we'll connect to all axes
         self._setup_event_connections()
 
         # Initialize as VBox
         super().__init__(
-            children=[self.home_button, self.pan_button, self.zoom_button],
+            children=list(self.tools.values()),
             layout=widgets.Layout(width="auto"),
             **kwargs,
         )
@@ -84,8 +90,8 @@ class Toolbar(widgets.VBox):
         # """Connect to all existing axes in the figure"""
         # for axes in self.figure.axes:
         #     self.add_axes(axes)
-        # self.figure.canvas.on_mouse_down(self._on_canvas_mouse_down)
-        # self.figure.canvas.on_mouse_up(self._on_canvas_mouse_up)
+        self.figure.canvas.on_mouse_down(self._on_canvas_mouse_down)
+        self.figure.canvas.on_mouse_up(self._on_canvas_mouse_up)
         self.figure.canvas.on_mouse_move(self._on_canvas_mouse_move)
 
     def _on_canvas_mouse_move(self, x: float, y: float):
@@ -101,35 +107,35 @@ class Toolbar(widgets.VBox):
         # if not self._point_in_axes(x, y):
         #     return
 
-    def _update_button_states(self):
-        """Update button appearance based on active tool"""
-        # Reset all button styles
-        normal_style = widgets.ButtonStyle()
-        active_style = widgets.ButtonStyle(button_color="lightblue")
+    # def _update_button_states(self):
+    #     """Update button appearance based on active tool"""
+    #     # Reset all button styles
+    #     normal_style = widgets.ButtonStyle()
+    #     active_style = widgets.ButtonStyle(button_color="lightblue")
 
-        self.home_button.style = normal_style
-        self.pan_button.style = (
-            active_style if self._active_tool == "pan" else normal_style
-        )
-        self.zoom_button.style = (
-            active_style if self._active_tool == "zoom" else normal_style
-        )
+    #     self.home_button.style = normal_style
+    #     self.pan_button.style = (
+    #         active_style if self._active_tool == "pan" else normal_style
+    #     )
+    #     self.zoom_button.style = (
+    #         active_style if self._active_tool == "zoom" else normal_style
+    #     )
 
-    def _determine_active_axes(self, event):
-        """
-        Determine which axes this mouse event belongs to.
-        This is key - we work on whichever axes the user is interacting with.
-        """
-        # The event should have inaxes set by the axes' mouse handler
-        if hasattr(event, "inaxes") and event.inaxes is not None:
-            return event.inaxes
+    # def _determine_active_axes(self, event):
+    #     """
+    #     Determine which axes this mouse event belongs to.
+    #     This is key - we work on whichever axes the user is interacting with.
+    #     """
+    #     # The event should have inaxes set by the axes' mouse handler
+    #     if hasattr(event, "inaxes") and event.inaxes is not None:
+    #         return event.inaxes
 
-        # Fallback: check all axes to see which one contains the event
-        for axes in self.figure.axes:
-            if axes._point_in_axes(event.canvas_x, event.canvas_y):
-                return axes
+    #     # Fallback: check all axes to see which one contains the event
+    #     for axes in self.figure.axes:
+    #         if axes._point_in_axes(event.canvas_x, event.canvas_y):
+    #             return axes
 
-        return None
+    #     return None
 
     # Button event handlers
     def _on_home_clicked(self, button):
@@ -151,7 +157,7 @@ class Toolbar(widgets.VBox):
             return
         self._tools_lock = True
         if change["new"]:  # Button toggled on
-            self._active_tool = "pan"
+            # self._active_tool = "pan"
             self.zoom_button.value = False  # Deactivate zoom if active
             # self.status_label.value = "Pan tool active - drag on any plot to move it"
         else:  # Button toggled off
@@ -166,6 +172,14 @@ class Toolbar(widgets.VBox):
         #     # self.status_label.value = "Pan tool active - drag on any plot to move it"
         # self._update_button_states()
         self._tools_lock = False
+
+    @property
+    def active_tool(self):
+        """Return the currently active tool"""
+        for tool in self.tools.values():
+            if getattr(tool, "value", False):
+                return tool
+        return None
 
     def _on_zoom_clicked(self, change):
         """Activate/deactivate zoom tool"""
