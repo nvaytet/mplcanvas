@@ -193,10 +193,9 @@ class Toolbar(widgets.VBox):
             # self._active_axes = self._determine_active_axes(event)
             # if self._active_axes:
             self._start_pan(ax, x, y)
-        # elif self._get_active_tool() == "zoom":
-        #     self._active_axes = self._determine_active_axes(event)
-        #     if self._active_axes:
-        #         self._start_zoom(event)
+        elif self._get_active_tool() == "zoom":
+            # self._active_axes = self._determine_active_axes(event)
+            self._start_zoom(ax, x, y)
 
         # if not self._point_in_axes(x, y):
         #     return
@@ -266,6 +265,10 @@ class Toolbar(widgets.VBox):
         self._pan_start = None
         # self._pan_start_limits = None
         # self._active_axes = None
+
+    def _start_zoom(self, ax, x, y):
+        """Start zoom selection on the active axes"""
+        self._zoom_rect_start = (x, y)
 
     # def _get_active_tool(self):
     #     """Return the currently active tool"""

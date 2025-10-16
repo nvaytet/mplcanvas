@@ -1,5 +1,5 @@
 # mplcanvas/figure.py
-from ipycanvas import Canvas, hold_canvas
+from ipycanvas import hold_canvas, Canvas
 import ipywidgets as ipw
 
 
@@ -39,7 +39,15 @@ class Figure(ipw.HBox):
 
         layout = ipw.Layout(width=f"{self.width}px", height=f"{self.height}px")
 
-        # Create the canvas
+        # # Create the canvas
+        # self.multicanvas = MultiCanvas(
+        #     2, width=self.width, height=self.height, layout=layout
+        # )
+        # # self.multicanvas[0].style = {"zIndex": 0}  # Background
+
+        # self.drawing_canvas = self.multicanvas[1]
+        # self.canvas = self.multicanvas[0]
+
         self.canvas = Canvas(width=self.width, height=self.height, layout=layout)
 
         # Create toolbar if requested

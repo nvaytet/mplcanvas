@@ -1,3 +1,4 @@
+from matplotlib.colors import to_hex
 import numpy as np
 
 
@@ -15,7 +16,7 @@ def draw_line(line, ax, canvas):
     x, y = ax.transData.transform(np.array((xdata, ydata)).T).T
     y = flip_y(y, canvas)
 
-    canvas.stroke_style = line.get_color()
+    canvas.stroke_style = to_hex(line.get_color())
     canvas.line_width = line.get_linewidth()
     # Use numpy array for efficient drawing
     points = np.column_stack([x, y])
